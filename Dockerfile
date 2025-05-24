@@ -22,4 +22,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # run it !
-CMD ["bun", "./index.ts"]
+CMD ["bun", "./src/index.ts"]
