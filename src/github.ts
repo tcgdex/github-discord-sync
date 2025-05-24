@@ -20,6 +20,10 @@ export type GithubDiscussion = {
 	author: {
 		login: string
 	}
+	category?: {
+		node_id: string
+		name: string
+	}
 }
 
 export type GithubComment = {

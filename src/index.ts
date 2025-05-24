@@ -32,8 +32,6 @@ app.all("/webhook", async (req: express.Request, res: express.Response) => {
 		// Handle new discussion comments
 		else if (event === "discussion_comment" && req.body.action === "created") {
 			logger.info("Received discussion comment event");
-			const comment = req.body.comment;
-			const discussion = req.body.discussion;
 			await syncDiscussionOnDiscord(req.body.discussion);
 		}
 
@@ -116,6 +114,10 @@ async function findDiscussionOnDiscord(discussion: GithubDiscussion) {
  * Sync a discussion from GitHub to Discord.
  */
 async function syncDiscussionOnDiscord(discussion: GithubDiscussion) {
+	if (discussion.category?.name !== CATEGORY_NAME) {
+		logger.info('skipping discussion not in the correct category')
+		return
+	}
 	let thread = await findDiscussionOnDiscord(discussion);
 	if (!thread) {
 		logger.info('Creating thread on Discord')
