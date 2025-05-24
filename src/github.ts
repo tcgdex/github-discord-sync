@@ -206,49 +206,55 @@ export async function createDiscussion(thread: AnyThreadChannel, message: Messag
 	return result.createDiscussion.discussion as GithubDiscussion;
 }
 
-
-let discussionCache: Array<GithubDiscussion> | undefined = undefined;
-
 export async function listGithubDiscussions(): Promise<Array<GithubDiscussion>> {
-	if (discussionCache) return discussionCache;
-	const discussions = await graphqlWithAuth<{
-		repository: {
-			discussions: {
-				totalCount: number;
-				nodes: Array<GithubDiscussion>;
-			};
-		};
-	}>(
-		`
-		query ($owner: String!, $name: String!, $id: ID!) {
-			repository(owner: $owner, name: $name) {
-				discussions(categoryId: $id, first: 100) {
-					totalCount
-					nodes {
-						id
-						body
-						number
-						title
-						author {
-							login
+	const discussions: Array<GithubDiscussion> = [];
+	let offset: string | undefined = undefined;
+	let hasNextPage = true;
+	while (hasNextPage) {
+		const res: {
+			repository: {
+				discussions: {
+					totalCount: number
+					nodes: Array<GithubDiscussion>
+					pageInfo: {
+						hasNextPage: boolean
+						endCursor: string | undefined
+					}
+				}
+			}
+		} = await graphqlWithAuth(
+			`
+			query ($owner: String!, $name: String!, $id: ID!) {
+				repository(owner: $owner, name: $name) {
+					discussions(categoryId: $id, first: 100) {
+						totalCount
+						nodes {
+							id
+							body
+							number
+							title
+							author {
+								login
+							}
+						}
+						pageInfo{
+							hasNextPage
+							endCursor
 						}
 					}
 				}
 			}
-		}
-		`,
-		{ owner: GITHUB_OWNER, name: GITHUB_REPO, id: REPO_CATEGORY_ID },
-	);
+			`,
+			{ owner: GITHUB_OWNER, name: GITHUB_REPO, id: REPO_CATEGORY_ID, offset: offset },
+		);
+		offset = res.repository.discussions.pageInfo.endCursor;
+		hasNextPage = res.repository.discussions.pageInfo.hasNextPage;
+		discussions.push(...res.repository.discussions.nodes)
 
-	if (!discussions) {
-		throw new Error(`Discussions not found.`);
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 	}
-	discussionCache = discussions.repository.discussions.nodes
 
-	// rate limit
-	await new Promise((resolve) => setTimeout(resolve, 1000));
-
-	return discussionCache;
+	return discussions
 }
 
 
