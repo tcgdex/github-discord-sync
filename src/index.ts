@@ -114,7 +114,7 @@ async function findDiscussionOnDiscord(discussion: GithubDiscussion) {
  * Sync a discussion from GitHub to Discord.
  */
 async function syncDiscussionOnDiscord(discussion: GithubDiscussion) {
-	if (discussion.category?.name !== CATEGORY_NAME) {
+	if (discussion.category && discussion.category.name !== CATEGORY_NAME) {
 		logger.info('skipping discussion not in the correct category')
 		return
 	}
